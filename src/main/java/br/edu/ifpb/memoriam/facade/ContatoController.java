@@ -33,11 +33,23 @@ public class ContatoController {
 		return cttFound;
 	}
 	
-	public void excluir(Contato c){
+	public Resultado excluir(Map<String, String[]> parametros){
 		ContatoDAO dao = new ContatoDAO(PersistenceUtil.getCurrentEntityManager());
+		Resultado resultado = new Resultado();
+		String[] ids = parametros.get("contatoschk");
+		
+		
 		dao.beginTransaction();
-		dao.delete(c);
+		for(int i=0;i<ids.length;i++){
+			Contato c = dao.find(Integer.parseInt(ids[i]));
+			dao.delete(c);
+		}
 		dao.commit();
+		
+		resultado.setErro(false);
+		resultado.setMensagensErro(Collections.singletonList("Contato(s) excluídos com sucesso"));
+		
+		return resultado;
 	}
 	
 	public Resultado cadastrar(Map<String, String[]> parametros){

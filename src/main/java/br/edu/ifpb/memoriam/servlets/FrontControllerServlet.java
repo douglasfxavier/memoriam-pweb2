@@ -76,12 +76,7 @@ public class FrontControllerServlet extends HttpServlet {
 				operadora = operadoraCtrl.buscar(request.getParameterMap());
 				request.setAttribute("operadora", operadora);
 				proxPagina = "operadora/cadastro.jsp";
-				break;
-				
-			case "excctt":
-
-			break;
-				
+				break;	
 
 		}
 		RequestDispatcher dispatcher = request.getRequestDispatcher(proxPagina);
@@ -126,6 +121,17 @@ public class FrontControllerServlet extends HttpServlet {
 					request.setAttribute("msgs", resultado.getMensagensSucesso());
 				}else{
 					request.setAttribute("operadora", (Operadora) resultado.getEntidade());
+					request.setAttribute("msg", resultado.getMensagensErro());
+				}
+				request.setAttribute("msgs",resultado.getMensagensSucesso());
+			break;
+			
+			case "excctt":
+				resultado = contatoCtrl.excluir(request.getParameterMap());
+				if (!resultado.isErro()){
+					proxPagina = paginaSucessoContato;
+					request.setAttribute("msgs", resultado.getMensagensSucesso());
+				}else{
 					request.setAttribute("msg", resultado.getMensagensErro());
 				}
 				request.setAttribute("msgs",resultado.getMensagensSucesso());
