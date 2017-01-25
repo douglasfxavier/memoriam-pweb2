@@ -56,7 +56,7 @@ public class InsereDadosBanco {
 	 * Insere Assuntos
 	 */
 	@Test
-	public void test01InsereContatos() {
+	public void test01InsereOperadoras() {
 		try {
 			OperadoraDAO dao = new OperadoraDAO(em);
 			dao.beginTransaction();
@@ -82,7 +82,7 @@ public class InsereDadosBanco {
 	 * Insere Alunos
 	 */
 	@Test
-	public void test02InsereOperadoras() {
+	public void test02InsereContatos() {
 		try {
 			OperadoraDAO odao = new OperadoraDAO(em);
 			Operadora o1 = odao.find(1);
