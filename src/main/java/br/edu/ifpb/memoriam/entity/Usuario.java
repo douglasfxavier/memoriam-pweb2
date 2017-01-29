@@ -4,6 +4,8 @@ import java.io.Serializable;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -15,7 +17,7 @@ public class Usuario implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	@Id
-	@Column(name="NU_ID")
+	@Column(name="ID_USUARIO")
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	private Integer id;
 	
@@ -31,6 +33,15 @@ public class Usuario implements Serializable {
 	@Column(name="ST_ATIVO")
 	private Boolean ativo;
 	
+	@Column(name="TP_PERFIL")
+	@Enumerated(EnumType.STRING)
+	private Perfil perfil;
+	
+	
+	
+	public Usuario() {
+	}
+
 	public String getPrenome() {
 		return  (this.nome != null) ? this.nome.split(" ")[0].trim() : null;
 	}
@@ -75,4 +86,13 @@ public class Usuario implements Serializable {
 		this.senha = senha;
 	}
 
+	public Perfil getPerfil() {
+		return perfil;
+	}
+
+	public void setPerfil(Perfil perfil) {
+		this.perfil = perfil;
+	}
+
+	
 }

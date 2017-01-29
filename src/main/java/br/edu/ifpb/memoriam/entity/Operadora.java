@@ -22,6 +22,12 @@ public class Operadora {
 	@Column(name="NU_PREFIXO")
 	private Integer prefixo;
 
+	
+	
+	public Operadora() {
+		
+	}
+
 	public Integer getId() {
 		return id;
 	}

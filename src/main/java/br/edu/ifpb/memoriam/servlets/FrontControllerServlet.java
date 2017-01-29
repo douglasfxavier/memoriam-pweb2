@@ -7,13 +7,17 @@ import java.util.List;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import br.edu.ifpb.memoriam.entity.Contato;
 import br.edu.ifpb.memoriam.entity.Operadora;
+import br.edu.ifpb.memoriam.entity.Usuario;
 import br.edu.ifpb.memoriam.facade.ContatoController;
+import br.edu.ifpb.memoriam.facade.LoginController;
 import br.edu.ifpb.memoriam.facade.OperadoraController;
 import br.edu.ifpb.memoriam.facade.Resultado;
 
@@ -41,7 +45,8 @@ public class FrontControllerServlet extends HttpServlet {
 		// TODO Auto-generated method stub
 		ContatoController contatoCtrl = new ContatoController();
 		String proxPagina = null;
-		
+		HttpSession session = request.getSession();
+		Usuario usuario = (Usuario) session.getAttribute("usuario");	
 		this.getServletContext().removeAttribute("msgs");
 		
 		String operacao = request.getParameter("op");
@@ -50,10 +55,10 @@ public class FrontControllerServlet extends HttpServlet {
 			response.sendRedirect(request.getHeader("Referer"));
 			return;
 		}
-				
+	
 		switch(operacao){
 			case "conctt":
-				List<Contato> contatos = contatoCtrl.consultar();
+				List<Contato> contatos = contatoCtrl.consultar(usuario);
 				request.setAttribute("contatos", contatos);
 				proxPagina = "contato/consulta.jsp";
 			break;
@@ -76,9 +81,9 @@ public class FrontControllerServlet extends HttpServlet {
 				operadora = operadoraCtrl.buscar(request.getParameterMap());
 				request.setAttribute("operadora", operadora);
 				proxPagina = "operadora/cadastro.jsp";
-				break;	
-
+			break;	
 		}
+		
 		RequestDispatcher dispatcher = request.getRequestDispatcher(proxPagina);
 		dispatcher.forward(request, response);
 	}
@@ -87,8 +92,13 @@ public class FrontControllerServlet extends HttpServlet {
 	protected void doPost(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException{
 			
-		this.getServletContext().removeAttribute("msg");
-		
+		this.getServletContext().removeAttribute("msgs");
+		LoginController loginCtrl = new LoginController();
+		HttpSession session = request.getSession();
+		Resultado resultado = new Resultado();
+		String paginaSucessoContato = "controller.do?op=conctt";
+		String paginaSucessoOperadora = "controller.do?op=conopr";
+		String proxPagina = null;	
 		String operacao = request.getParameter("op");
 		
 		if (operacao == null){
@@ -97,49 +107,76 @@ public class FrontControllerServlet extends HttpServlet {
 			return;
 		}
 		
-		Resultado resultado = null;
-		String paginaSucessoContato = "controller.do?op=conctt";
-		String paginaSucessoOperadora = "controller.do?op=conopr";
-		String proxPagina = null;	
+		
 		switch(operacao){
 			case "cadctt":
 				resultado = contatoCtrl.cadastrar(request.getParameterMap());
-				if (!resultado.isErro()){
-					proxPagina = paginaSucessoContato;
-					request.setAttribute("msgs",resultado.getMensagensSucesso());
-				}else{
+				if (resultado.isErro()){
 					request.setAttribute("contato", (Contato) resultado.getEntidade());
-					request.setAttribute("msg",resultado.getMensagensErro());
+					request.setAttribute("msgs",resultado.getMensagens());
 					proxPagina = "contato/cadastro.jsp";	
+				}else{
+					proxPagina = paginaSucessoContato;					
 				}					
 			break;
 			
 			case "cadopr":
 				resultado = operadoraCtrl.cadastrar(request.getParameterMap());
-				if (!resultado.isErro()){
-					proxPagina = paginaSucessoOperadora;
-					request.setAttribute("msgs", resultado.getMensagensSucesso());
-				}else{
+				if (resultado.isErro()){
+					proxPagina = "operadora/cadastro.jsp";
 					request.setAttribute("operadora", (Operadora) resultado.getEntidade());
-					request.setAttribute("msg", resultado.getMensagensErro());
-				}
-				request.setAttribute("msgs",resultado.getMensagensSucesso());
+					request.setAttribute("msgs", resultado.getMensagens());
+				}else{
+					proxPagina = paginaSucessoOperadora;
+				}	
 			break;
 			
 			case "excctt":
 				resultado = contatoCtrl.excluir(request.getParameterMap());
-				if (!resultado.isErro()){
-					proxPagina = paginaSucessoContato;
-					request.setAttribute("msgs", resultado.getMensagensSucesso());
+				if (resultado.isErro()){
+					request.setAttribute("msg", resultado.getMensagens());
 				}else{
-					request.setAttribute("msg", resultado.getMensagensErro());
+					proxPagina = paginaSucessoContato;
+					request.setAttribute("msgs", resultado.getMensagens());
 				}
-				request.setAttribute("msgs",resultado.getMensagensSucesso());
 			break;
+			
+			case "login":
+				String paginaSucesso = "controller.do?op=conctt";
+				resultado = loginCtrl.isValido(request.getParameterMap());
+				
+				if (resultado.isErro()){
+					request.setAttribute("msgs", resultado.getMensagens());
+					proxPagina = "login/login.jsp";
+				}else{
+					String lembrar = request.getParameter("lembrar");
+					Usuario usuarioLogado = (Usuario) resultado.getEntidade();
+					session.setAttribute("usuario",usuarioLogado);
+					proxPagina = paginaSucesso;
+					
+					if (lembrar != null) { 
+						Cookie c = new Cookie("loginCookie", usuarioLogado.getEmail());
+						c.setMaxAge(-1); response.addCookie(c); 
+					} else { 
+						for (Cookie cookie : request.getCookies()) { 
+							if (cookie.getName().equals("loginCookie")) {
+								cookie.setValue(null); 
+								cookie.setMaxAge(0); 
+								response.addCookie(cookie); 
+							} 
+						}
+					}			
+				}
+				break;	
+				
+			case "logout":
+				proxPagina = "login/login.jsp";
+				session.invalidate();
+				break;
 
 			default:
 				request.setAttribute("erro", "Operação não especificada no servlet");
-				proxPagina = "../erro/erro.jsp";				
+				proxPagina = "erro/erro.jsp";				
 		}
 		
 		if (resultado.isErro()){

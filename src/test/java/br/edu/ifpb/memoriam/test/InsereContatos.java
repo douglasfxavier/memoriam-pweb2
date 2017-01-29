@@ -10,9 +10,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
 import org.junit.Test;
-import org.junit.runners.MethodSorters;
 
 import br.edu.ifpb.memoriam.dao.ContatoDAO;
 import br.edu.ifpb.memoriam.dao.ManagedEMContext;
@@ -21,18 +19,10 @@ import br.edu.ifpb.memoriam.dao.PersistenceUtil;
 import br.edu.ifpb.memoriam.dao.UsuarioDAO;
 import br.edu.ifpb.memoriam.entity.Contato;
 import br.edu.ifpb.memoriam.entity.Operadora;
-import br.edu.ifpb.memoriam.entity.Perfil;
 import br.edu.ifpb.memoriam.entity.Usuario;
-import br.edu.ifpb.memoriam.util.PasswordUtil;
 
-/**
- * @author fred
- *
- */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class InsereDadosBanco {
+public class InsereContatos {
 	private static EntityManagerFactory emf;
-	private static SimpleDateFormat fmt = new SimpleDateFormat("dd/MM/yyyy");
 	private EntityManager em;
 
 	@BeforeClass
@@ -56,64 +46,6 @@ public class InsereDadosBanco {
 		em = emf.createEntityManager();
 	}
 	
-	/**
-	 * Insere Assuntos
-	 */
-	@Test
-	public void test01InsereOperadoras() {
-		try {
-			OperadoraDAO dao = new OperadoraDAO(em);
-			dao.beginTransaction();
-			Operadora a = new Operadora();
-			a.setNome("Oi");
-			a.setPrefixo(31);
-			dao.insert(a);
-			a = new Operadora();
-			a.setNome("Vivo");
-			a.setPrefixo(53);
-			dao.insert(a);
-			a = new Operadora();
-			a.setNome("Claro");
-			a.setPrefixo(41);
-			dao.insert(a);
-			dao.commit();
-		} catch (Exception e) {
-			Assert.fail("Erro de BD" + e.getMessage());
-		}
-	}
-
-
-	@Test
-	public void testInsereUsuarios() {
-		Usuario u1 = new Usuario();
-		u1.setNome("Carl Sagan");
-		u1.setEmail("sagan@ifpb.edu.br");
-		u1.setSenha(PasswordUtil.encryptMD5("cosmos"));
-		u1.setAtivo(true);
-		u1.setPerfil(Perfil.BASIC);
-		
-		Usuario u2 = new Usuario();
-		u2.setNome("Alan Turing");
-		u2.setEmail("turing@ifpb.edu.br");
-		u2.setSenha(PasswordUtil.encryptMD5("enigma"));
-		u2.setAtivo(true);
-		u2.setPerfil(Perfil.BASIC);
-		
-		Usuario u3 = new Usuario();
-		u3.setNome("Administrador");
-		u3.setEmail("admin@ifpb.edu.br");
-		u3.setSenha(PasswordUtil.encryptMD5("root123"));
-		u3.setAtivo(true);
-		u3.setPerfil(Perfil.ADMIN);
-		
-		UsuarioDAO udao = new UsuarioDAO(em);
-		udao.beginTransaction();
-		udao.insert(u1);
-		udao.insert(u2);
-		udao.insert(u3);
-		udao.commit();
-	}
-
 	@Test
 	public void testInsereContatos() {
 		try {
@@ -170,7 +102,7 @@ public class InsereDadosBanco {
 			a.setDataAniversario(new Date());
 			a.setOperadora(o2);
 			a.setUsuario(turing);
-			dao.insert(a);	
+			dao.insert(a);
 			a = new Contato();
 			a.setNome("Rogerio Nunes");
 			a.setFone("98388-4787");
@@ -196,7 +128,7 @@ public class InsereDadosBanco {
 			a.setNome("Natalia Seixas Gomes");
 			a.setFone("94432-0199");
 			a.setDataAniversario(new Date());
-			a.setOperadora(o2);	
+			a.setOperadora(o2);
 			a.setUsuario(turing);
 			dao.insert(a);
 			dao.commit();
@@ -204,7 +136,4 @@ public class InsereDadosBanco {
 			Assert.fail("Erro de BD: " + e);
 		}
 	}
-
-
-
 }

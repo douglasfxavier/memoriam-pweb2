@@ -1,7 +1,5 @@
 package br.edu.ifpb.memoriam.facade;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -10,8 +8,8 @@ import br.edu.ifpb.memoriam.dao.PersistenceUtil;
 import br.edu.ifpb.memoriam.entity.Operadora;
 
 public class OperadoraController {
-	private Operadora operadora;
-	private ArrayList<String> mensagensErro;
+	private static Operadora operadora;
+	private static Resultado resultado = new Resultado();
 
 	public List<Operadora> consultar(){
 		OperadoraDAO dao = new OperadoraDAO(PersistenceUtil.getCurrentEntityManager());
@@ -29,56 +27,56 @@ public class OperadoraController {
 	}
 	
 	public Resultado cadastrar(Map<String, String[]> parametros){
-		Resultado resultado = new Resultado();
+		resultado.setErro(false);
+		resultado.getMensagens().removeAll(resultado.getMensagens());
 		
 		if (isParametrosValidos(parametros)){
 			OperadoraDAO dao = new OperadoraDAO(PersistenceUtil.getCurrentEntityManager());
+			
 			dao.beginTransaction();
 	
-			if (this.operadora.getId() == null){
-				dao.insert(this.operadora);
+			if (operadora.getId() == null){
+				dao.insert(operadora);
 			}else{
-				dao.update(this.operadora);
+				dao.update(operadora);
 			}
 			
 			dao.commit();
-			resultado.setErro(false);
-			resultado.setMensagensErro(Collections.singletonList("Operadora criado com sucesso"));
 		}else{
-			resultado.setEntidade(this.operadora);
+			resultado.setEntidade(operadora);
+			Mensagem msg = new Mensagem("Não foi possível cadastrar a operadora",Categoria.ERRO);
+			resultado.addMensagem(msg);;
 			resultado.setErro(true);
-			resultado.setMensagensErro(this.mensagensErro);
 		}
 		return resultado;
 	}
 	
 	private boolean isParametrosValidos(Map<String,String[]> parametros){
 			
-		String[] id = parametros.get("id");
 		String[] nome = parametros.get("nome");
 		String[] prefixo = parametros.get("prefixo");
-
-		
-		this.operadora = new Operadora();
-		this.mensagensErro = new ArrayList<String>();
 	
-		if (id != null && id.length > 0 && !id[0].isEmpty()){
-			operadora.setId(Integer.parseInt(id[0]));
-		}
+		resultado.setErro(false);
 		
+		operadora = new Operadora();
+			
 		if (nome == null || nome.length == 0 || nome[0].isEmpty()){
-			this.mensagensErro.add("Nome é campo obrigatório");
+			Mensagem msg = new Mensagem("Nome é campo obrigatório",Categoria.AVISO);
+			resultado.addMensagem(msg);;
+			resultado.setErro(true);
 		}else{
 			operadora.setNome(nome[0]);
 		}
 		
 		if (prefixo == null || prefixo.length == 0 || prefixo[0].isEmpty()){
-			this.mensagensErro.add("Prefixo é campo obrigatório!");
+			Mensagem msg = new Mensagem("Prefixo é campo obrigatório!",Categoria.AVISO);
+			resultado.addMensagem(msg);;
+			resultado.setErro(true);
 		}else{
 			operadora.setPrefixo(Integer.parseInt(prefixo[0]));
 		}
 
-		return this.mensagensErro.isEmpty();
+		return !resultado.isErro();
 	}
 	
 }

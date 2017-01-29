@@ -35,6 +35,15 @@ public class Contato {
 	@OneToOne
 	private Operadora operadora;
 	
+	@JoinColumn(name="ID_USUARIO")
+	@OneToOne
+	private Usuario usuario;
+	
+	
+	public Contato() {
+		super();
+	}
+
 	public Integer getId() {
 		return id;
 	}
@@ -73,6 +82,14 @@ public class Contato {
 
 	public void setOperadora(Operadora operadora) {
 		this.operadora = operadora;
+	}
+
+	public Usuario getUsuario() {
+		return usuario;
+	}
+
+	public void setUsuario(Usuario usuario) {
+		this.usuario = usuario;
 	}
 
 	@Override

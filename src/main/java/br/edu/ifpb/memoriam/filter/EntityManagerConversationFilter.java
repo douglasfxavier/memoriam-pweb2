@@ -23,7 +23,7 @@ import br.edu.ifpb.memoriam.dao.PersistenceUtil;
 
 /**
  * Este filtro controla o EntityManager para conversa��es longas. O EM � colocado e retirado
- * da HttpSession a cada request para br.edu.ifpb.memoriam.servlets e JSPs. Quando o servlet e os JSPs utilizarem
+ * da HttpSession a cada request para servlets e JSPs. Quando o servlet e os JSPs utilizarem
  * o EM (via DAOs, por exemplo) ele estar� dispon�vel via PersistenceUtil.getCurrentEntityManager().
  * Este filtro redireciona para a p�gina principal de consulta caso a HttpSession tenha sido fechada. Ou seja,
  * se ele for ativado sem que uma sess~]ao tenha sido previamente criada, ele redirecionar� para esta p�gina index.jsp.
@@ -85,8 +85,10 @@ public class EntityManagerConversationFilter implements Filter {
 				ManagedEMContext.unbind(emf);
 				logger.debug(context + "Desassociou EntityManager do contexto");
 				
-				httpSession.removeAttribute(ENTITYMANAGER_FACTORY_KEY);
-				logger.debug(context + "Retirou EntityManager da HttpSession");
+				if (((HttpServletRequest) request).isRequestedSessionIdValid()) {
+					httpSession.removeAttribute(ENTITYMANAGER_FACTORY_KEY);
+					logger.debug(context + "Retirou EntityManager da HttpSession");
+				}
 
 				logger.debug(context + "<<< Fim da conversa��o");
 
@@ -94,8 +96,10 @@ public class EntityManagerConversationFilter implements Filter {
 				ManagedEMContext.unbind(emf);
 				logger.debug(context + "Desassociou EntityManager do contexto");
 				
-				httpSession.setAttribute(ENTITYMANAGER_FACTORY_KEY, currentEntityManager);
-				logger.debug(context + "Associou EntityManager a HttpSession");
+				if (((HttpServletRequest) request).isRequestedSessionIdValid()) {
+					httpSession.setAttribute(ENTITYMANAGER_FACTORY_KEY, currentEntityManager);
+					logger.debug(context + "Associou EntityManager a HttpSession");
+				}
 
 				logger.debug(context + "> Retornando para o usuario");
 			}
@@ -128,9 +132,11 @@ public class EntityManagerConversationFilter implements Filter {
 
 				currentEntityManager.close();
 				logger.debug(context + "Fechou EntityManager ap�s exception");
-
-				httpSession.setAttribute(ENTITYMANAGER_FACTORY_KEY, null);
-				logger.debug(context + "Removeu EntityManager da HttpSession");
+				
+				if (((HttpServletRequest) request).isRequestedSessionIdValid()) {
+					httpSession.setAttribute(ENTITYMANAGER_FACTORY_KEY, null);
+					logger.debug(context + "Removeu EntityManager da HttpSession");
+				}
 
 			}
 

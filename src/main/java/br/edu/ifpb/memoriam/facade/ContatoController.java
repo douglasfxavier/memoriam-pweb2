@@ -2,8 +2,6 @@ package br.edu.ifpb.memoriam.facade;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -11,16 +9,18 @@ import java.util.Map;
 import br.edu.ifpb.memoriam.dao.ContatoDAO;
 import br.edu.ifpb.memoriam.dao.OperadoraDAO;
 import br.edu.ifpb.memoriam.dao.PersistenceUtil;
+import br.edu.ifpb.memoriam.dao.UsuarioDAO;
 import br.edu.ifpb.memoriam.entity.Contato;
 import br.edu.ifpb.memoriam.entity.Operadora;
+import br.edu.ifpb.memoriam.entity.Usuario;
 
 public class ContatoController {
-	private Contato contato = new Contato();
-	private ArrayList<String> mensagensErro = new ArrayList<String>();
+	private static Contato contato = new Contato();
+	private static Resultado resultado = new Resultado();	
 
-	public List<Contato> consultar(){
+	public List<Contato> consultar(Usuario usuario){
 		ContatoDAO dao = new ContatoDAO(PersistenceUtil.getCurrentEntityManager());
-		List<Contato> contatos = dao.findAll();
+		List<Contato> contatos = dao.findAllFromUser(usuario);
 		return contatos;
 	}
 	
@@ -35,41 +35,48 @@ public class ContatoController {
 	
 	public Resultado excluir(Map<String, String[]> parametros){
 		ContatoDAO dao = new ContatoDAO(PersistenceUtil.getCurrentEntityManager());
-		Resultado resultado = new Resultado();
-		String[] ids = parametros.get("contatoschk");
+		String[] ids = parametros.get("delids");
+		resultado.getMensagens().removeAll(resultado.getMensagens());
+		resultado.setErro(false);
 		
 		
 		dao.beginTransaction();
 		for(int i=0;i<ids.length;i++){
 			Contato c = dao.find(Integer.parseInt(ids[i]));
 			dao.delete(c);
+			resultado.setErro(false);
 		}
 		dao.commit();
 		
-		resultado.setErro(false);
-		resultado.setMensagensErro(Collections.singletonList("Contato(s) excluídos com sucesso"));
 		
+		resultado.addMensagem(new Mensagem("Contato(s) excluídos com sucesso",Categoria.INFO));
 		return resultado;
 	}
 	
 	public Resultado cadastrar(Map<String, String[]> parametros){
-		Resultado resultado = new Resultado();
+		resultado.setErro(false);
+		resultado.getMensagens().removeAll(resultado.getMensagens());
 		
+
 		if (isParametrosValidos(parametros)) {
+			
 			ContatoDAO dao = new ContatoDAO(PersistenceUtil.getCurrentEntityManager());
 			
 			dao.beginTransaction();
-
-			if (this.contato.getId() == null) {
-				dao.insert(this.contato);
+			if (contato.getId() == null) {
+				dao.insert(contato);
 			}else {
-				dao.update(this.contato);
+				dao.update(contato);
 			}
 			
 			dao.commit();
-			resultado.setErro(false);
-			resultado.setMensagensErro(Collections.singletonList("Contato criado com sucesso"));
-		} 		
+	
+		}else{
+			Mensagem msg = new Mensagem("Não foi possível cadastrar o contato",Categoria.ERRO);
+			resultado.addMensagem(msg);;
+			resultado.setErro(true);
+		}
+
 		return resultado;
 	}
 	
@@ -77,32 +84,37 @@ public class ContatoController {
 		
 		//Nomes dos parâmetros vêm dos atributos 'name' das tags HTML do formulário
 		
-		String[] id = parametros.get("id");
+
 		String[] nome = parametros.get("nome");
 		String[] fone = parametros.get("fone");
 		String[] dataAniv = parametros.get("dataaniv");
+		String[] idOperadora = parametros.get("operadora");
+		String[] idUsuario = parametros.get("idusuario");
+			
+		resultado.setErro(false);
 		
-		this.contato = new Contato();
-		this.mensagensErro = new ArrayList<String>();
-		
-		if (id != null && id.length >0 && !id[0].isEmpty()) {
-			contato.setId(Integer.parseInt(id[0]));
-		}
 		
 		if (nome == null || nome.length == 0 || nome[0].isEmpty()) {
-			this.mensagensErro.add("Nome é campo obrigatório!");
+			
+			Mensagem msg = new Mensagem("Nome é campo obrigatório!",Categoria.AVISO);
+			resultado.addMensagem(msg);;
+			resultado.setErro(true);
 		} else {
 			contato.setNome(nome[0]);
 		}
 		
-		if (fone == null || fone.length == 0 || nome[0].isEmpty()){
-			mensagensErro.add("Fone é campo obrigatório!");
+		if (fone == null || fone.length == 0 || fone[0].isEmpty()){
+			Mensagem msg = new Mensagem("Telefone é campo obrigatório!",Categoria.AVISO);
+			resultado.addMensagem(msg);;
+			resultado.setErro(true);
 		}else{
 			contato.setFone(fone[0]);
 		}
 	
 		if (dataAniv == null || dataAniv.length == 0 || dataAniv[0].isEmpty()) {
-			this.mensagensErro.add("Data de aniversário é campo obrigatório!");
+			Mensagem msg = new Mensagem("Telefone é campo obrigatório!",Categoria.AVISO);
+			resultado.addMensagem(msg);;
+			resultado.setErro(true);	
 		}else {
 			if (dataAniv[0].matches(
 					"(0[1-9]|[12][0-9]|3[01])/(0[1-9]|1[012])/(19|20)\\d{2,2}")) {
@@ -112,23 +124,42 @@ public class ContatoController {
 					Date dataIni = sdf.parse(dataAniv[0]);
 					contato.setDataAniversario(dataIni);
 				} catch (ParseException e) {
-					this.mensagensErro.add("Data inválida para a data de aniversário!");
+					Mensagem msg = new Mensagem("Data inválida para a data de aniversário!",Categoria.ERRO);
+					resultado.addMensagem(msg);;
+					resultado.setErro(true);
 				}
 			}else {
-				this.mensagensErro.add("Formato inválido para a data de aniversário	(use dd/mm/aaaa)!");
+				Mensagem msg = new Mensagem("Formato inválido para a data de aniversário	(use dd/mm/aaaa)!",Categoria.AVISO);
+				resultado.addMensagem(msg);;
+				resultado.setErro(true);
 			}
 		}
 		
-		Operadora operadora = null;
-		String idOperadora = parametros.get("operadora")[0];
 		
-		if (idOperadora != null) {
+		if (idOperadora == null || idOperadora.length == 0 || idOperadora[0].isEmpty()) {
+			Mensagem msg = new Mensagem("A operadora não foi selecionada",Categoria.AVISO);
+			resultado.addMensagem(msg);;
+			resultado.setErro(true);
+		}else{
+			Operadora operadora;
 			OperadoraDAO opDao = new OperadoraDAO(
 			PersistenceUtil.getCurrentEntityManager());
-			operadora = opDao.find(Integer.parseInt(idOperadora));
+			operadora = opDao.find(Integer.parseInt(idOperadora[0]));
+			contato.setOperadora(operadora);
 		}
-		contato.setOperadora(operadora);
 		
-		return mensagensErro.isEmpty();
+		
+		if (idUsuario == null || idUsuario.length == 0 || idUsuario[0].isEmpty()){
+			Mensagem msg = new Mensagem("Não há usuário logado!",Categoria.ERRO);
+			resultado.addMensagem(msg);;
+			resultado.setErro(true);
+		}else{
+			UsuarioDAO daousuario = new UsuarioDAO(PersistenceUtil.getCurrentEntityManager());
+			Usuario usuario = new Usuario(); 
+			usuario = daousuario.find(Integer.parseInt(idUsuario[0]));
+			contato.setUsuario(usuario);
+		}
+		
+		return !resultado.isErro();
 	}
 }
